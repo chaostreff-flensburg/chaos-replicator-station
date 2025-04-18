@@ -1,0 +1,30 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model File {
+  id    Int     @id @default(autoincrement())
+  name  String?
+  phonenumber String?
+  job Job?   @relation(fields: [jobId], references: [id])
+  jobId Int?
+  created_at DateTime? @default(now())
+  updated_at DateTime? @updatedAt
+}
+
+model Job {
+  id      Int     @id @default(autoincrement())
+  status  String?
+  files    File[] 
+  created_at DateTime? @default(now())
+  updated_at DateTime? @updatedAt
+}

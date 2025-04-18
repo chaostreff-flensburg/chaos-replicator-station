@@ -1,0 +1,112 @@
+import { File, Job, PrismaClient } from './generated/prisma'
+const prisma = new PrismaClient()
+import {appExecute, uploadFileToOctoprint, getPrinterStatus, selectAndPrintFile, updateJobStatus} from './helper'
+
+
+const main = async () => {
+    while (true) {
+        const loopStart: number = +Date.now();
+        console.log(`=== New Loop at ${loopStart} ===`)
+        // count how many files are their without a print job
+        try {
+
+            // Start: Sliced files to Job gcode
+            const files = await prisma.file.findMany({
+                where: {
+                    jobId: null
+                }
+            });
+            console.log(`Found ${files.length} files without a print job`)
+            // if count of file sis larger or equal to 1
+            if(!files.length){
+            }
+            else if (files.length >= 6) {
+                await createJob(files);
+            }
+            // if last element of file created_at to now() difference is bigger then 120 seconds, if shoud be true
+            else if((+Date.now() - files.at(-1)?.created_at) >= 120*1000){
+                await createJob(files);
+            }
+
+            // Job gcode to printer (if printer is not busy)
+
+        // check printer status - and create new print status
+        const printerStatus = await getPrinterStatus();
+        const jobPrinting = await prisma.job.findFirst({
+            where: {
+                status: "printing"
+            },
+            orderBy: {
+                id: 'asc'
+            }
+        })
+        if(printerStatus?.isAvailableForPrinting && !!jobPrinting){
+            
+            //prisma get the job with the smallest id and the status "uploaded"
+            const jobToPrint = await prisma.job.findFirst({
+                where: {
+                    status: "uploaded"
+                },
+                orderBy: {
+                    id: 'asc'
+                }
+            })
+            console.log('jobToPrint', jobToPrint)
+            if(!!jobToPrint && jobToPrint.id){
+                await selectAndPrintFile(`${jobToPrint.id}.gcode`);
+                await updateJobStatus(jobToPrint.id, "printing");
+            }
+
+        }
+        // If printer is done with job, update job
+        } catch (error) {
+            console.error(error);
+        }
+        const loopEnd = +Date.now();
+        const loopDuration = loopEnd - loopStart;
+        if (loopDuration < 15000) {
+            console.log(`Waiting for ${15000 - loopDuration}ms`)
+            await new Promise(resolve => setTimeout(resolve, 15000 - loopDuration));
+            console.log('')
+        }
+    }
+}
+
+const createJob = async (files: Array<File>) => {
+    try{
+        console.log(`Creating new job from files`)
+        // slice files to max first 6 element in array
+        const slicedFiles = files.slice(0, 6);
+        // create new Print
+        const job: Job = await prisma.job.create({
+            data: {
+                status: "created",
+            }
+        });
+        // updated all sliced files with the new job id
+        await prisma.file.updateMany({
+            where: {
+                id: {
+                    in: slicedFiles.map(file => file.id)
+                }
+            },
+            data: {
+                jobId: job.id
+            }
+        });
+        console.log(`Created job ${job.id} with ${slicedFiles.length} files`)
+        const slicedFilesName: string = slicedFiles.map(file => `"./stls/${file.id}.stl"`).join(' ')
+        console.log(slicedFilesName)
+        await appExecute(`cd ../../bottle-clip-name-tag && prusa-slicer --load="./PrusaSlicer_config_bundle.ini" -m -g ${slicedFilesName} -o="./gcodes/${job.id}.gcode"`);
+        // update job status to sliced
+        await updateJobStatus(job.id, "sliced");
+        console.log(`Updated job ${job.id} to sliced`)
+        await uploadFileToOctoprint(`../../bottle-clip-name-tag/gcodes/${job.id}.gcode`);
+        await updateJobStatus(job.id, "uploaded");
+        console.log(`Updated job ${job.id} to uploaded`)
+    }catch(error){
+        console.error(error);
+    }
+}
+
+main()
