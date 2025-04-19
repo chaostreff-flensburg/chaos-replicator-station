@@ -1,7 +1,7 @@
 import { File, Job, PrismaClient } from './generated/prisma'
 const prisma = new PrismaClient()
-import {appExecute, uploadFileToOctoprint, getPrinterStatus, selectAndPrintFile, updateJobStatus} from './helper'
-
+import {appExecute, uploadFileToOctoprint, getPrinterStatus, selectAndPrintFile} from './helper'
+import { getFilesWithoutJobs, createJobSetFiles, updateJobStatus, getFirstPrintingJob, getFirstUploadedJob  } from './db-fns'
 
 const main = async () => {
     while (true) {
@@ -11,11 +11,7 @@ const main = async () => {
         try {
 
             // Start: Sliced files to Job gcode
-            const files = await prisma.file.findMany({
-                where: {
-                    jobId: null
-                }
-            });
+            const files = await getFilesWithoutJobs();
             console.log(`Found ${files.length} files without a print job`)
             // if count of file sis larger or equal to 1
             if(!files.length){
@@ -24,7 +20,7 @@ const main = async () => {
                 await createJob(files);
             }
             // if last element of file created_at to now() difference is bigger then 120 seconds, if shoud be true
-            else if((+Date.now() - files.at(-1)?.created_at) >= 120*1000){
+            else if(true || (+Date.now() - files.at(-1)?.created_at) >= 120*1000){
                 await createJob(files);
             }
 
@@ -32,31 +28,16 @@ const main = async () => {
 
         // check printer status - and create new print status
         const printerStatus = await getPrinterStatus();
-        const jobPrinting = await prisma.job.findFirst({
-            where: {
-                status: "printing"
-            },
-            orderBy: {
-                id: 'asc'
-            }
-        })
+        const jobPrinting = await getFirstPrintingJob();
         if(printerStatus?.isAvailableForPrinting && !!jobPrinting){
             
             //prisma get the job with the smallest id and the status "uploaded"
-            const jobToPrint = await prisma.job.findFirst({
-                where: {
-                    status: "uploaded"
-                },
-                orderBy: {
-                    id: 'asc'
-                }
-            })
+            const jobToPrint = getFirstUploadedJob()
             console.log('jobToPrint', jobToPrint)
             if(!!jobToPrint && jobToPrint.id){
                 await selectAndPrintFile(`${jobToPrint.id}.gcode`);
                 await updateJobStatus(jobToPrint.id, "printing");
             }
-
         }
         // If printer is done with job, update job
         } catch (error) {
@@ -78,22 +59,8 @@ const createJob = async (files: Array<File>) => {
         // slice files to max first 6 element in array
         const slicedFiles = files.slice(0, 6);
         // create new Print
-        const job: Job = await prisma.job.create({
-            data: {
-                status: "created",
-            }
-        });
-        // updated all sliced files with the new job id
-        await prisma.file.updateMany({
-            where: {
-                id: {
-                    in: slicedFiles.map(file => file.id)
-                }
-            },
-            data: {
-                jobId: job.id
-            }
-        });
+        const job = await createJobSetFiles(files)
+        
         console.log(`Created job ${job.id} with ${slicedFiles.length} files`)
         const slicedFilesName: string = slicedFiles.map(file => `"./stls/${file.id}.stl"`).join(' ')
         console.log(slicedFilesName)

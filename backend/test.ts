@@ -1,15 +1,22 @@
-import { octoprintApi } from './octoprintApi'
-import fs from 'fs'
+import { createJob } from "./db-fns";
 
-
-const getAllFiles = async () => {
-    try {
-        const response = await octoprintApi.get(`/files`)
-        console.log(response.data)
-    } catch (error) {
-        console.error(error);
-        return null
-    }
+const test = async () => {
+    console.log("test");
+    console.log(await createJob([
+        {
+            name: 'scammo, 1745065690619',
+            jobId: null,
+            createdAt: null,
+            updatedAt: null,
+            id: 1
+          },
+          {
+            name: 'scammo',
+            jobId: null,
+            createdAt: 1745065716626,
+            updatedAt: null,
+            id: 2
+          }
+    ]));
 }
-//getAllFiles()
-//selectAndPrintfile('17_0.4n_0.2mm_PLA_MINIIS_18m.gcode')
+test();

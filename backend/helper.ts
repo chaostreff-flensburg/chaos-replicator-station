@@ -52,22 +52,6 @@ export const selectAndPrintFile = async (fileName: string) => {
   }
 }
 
-export const updateJobStatus = async (jobId: number, status: string) => {
-  try {
-    await prisma.job.update({
-      where: {
-        id: jobId
-      },
-      data: {
-        status
-      }
-    });
-  } catch (error) {
-    console.error(error)
-  }
-}
-
-
 export const appExecute = async (command: string): Promise<any> => {
   return new Promise((resolve, reject) => {
     exec(command, (error, stdout, stderr) => {

@@ -3,6 +3,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import {appExecute} from './helper'
 import { getPrinterStatus } from './helper';
+import { insertFile } from './db-fns';
 
 
 const prisma = new PrismaClient()
@@ -21,11 +22,7 @@ app.post('/print-jobs', async (req: Request, res: Response) => {
   try{
     const name = req.body?.configuration?.name;
 
-    const file = await prisma.file.create({
-      data: {
-          name,
-          phonenumber: "1234567890"            
-      }});
+      const file = await insertFile(name)
       console.log(file);
       await appExecute(`cd ../../bottle-clip-name-tag && openscad -D name='"${name}"' examples.scad -o stls/${file?.id}.stl`);
       
