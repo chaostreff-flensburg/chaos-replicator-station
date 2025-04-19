@@ -11,9 +11,9 @@ export const createTables = () => {
     //db.close();
 }
 export const insertFile = async (name: String) => {
-  const insertSql = `INSERT INTO File (name, createdAt) VALUES(?, ?)`;
+  const insertSql = `INSERT INTO File (name, fileCreated, createdAt) VALUES(?, ?)`;
   try {
-    await execute(db, insertSql, [name, +new Date()]);
+    await execute(db, insertSql, [name, 0, +new Date()]);
     const createdFile = await query('SELECT * FROM File ORDER BY id DESC LIMIT 1');
     console.log(createdFile[0])
     return createdFile[0];
@@ -49,9 +49,9 @@ export const getFilesWithoutJobs = async () => {
 }
 
 export const createJobSetFiles = async(files: Array<any>) => {
-    const insertSql = `INSERT INTO Jobs (status, fileCreated) VALUES(?)`;
+    const insertSql = `INSERT INTO Jobs (status) VALUES(?)`;
   try {
-    await execute(db, insertSql, ['created', 0]);
+    await execute(db, insertSql, ['created']);
     const JobsResponse = await query('SELECT * FROM Jobs ORDER BY id DESC LIMIT 1');
     const job = JobsResponse[0];
     //console.log(job)
