@@ -31,7 +31,7 @@ const main = async () => {
         if(printerStatus?.isAvailableForPrinting && !jobPrinting){
             
             //prisma get the job with the smallest id and the status "uploaded"
-            const jobToPrint = getFirstUploadedJob()
+            const jobToPrint = await getFirstUploadedJob()
             console.log('jobToPrint', jobToPrint)
             if(jobToPrint.id){
                 await selectAndPrintFile(`${jobToPrint.id}.gcode`);
