@@ -27,12 +27,13 @@ const main = async () => {
         // check printer status - and create new print status
         const printerStatus = await getPrinterStatus();
         const jobPrinting = await getFirstPrintingJob();
+        console.log('printerStatus', printerStatus, 'jobPrinting', jobPrinting)
         if(printerStatus?.isAvailableForPrinting && !!jobPrinting){
             
             //prisma get the job with the smallest id and the status "uploaded"
             const jobToPrint = getFirstUploadedJob()
             console.log('jobToPrint', jobToPrint)
-            if(!!jobToPrint && jobToPrint.id){
+            if(jobToPrint.id){
                 await selectAndPrintFile(`${jobToPrint.id}.gcode`);
                 await updateJobStatus(jobToPrint.id, "printing");
             }
