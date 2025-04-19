@@ -11,7 +11,7 @@ export const createTables = () => {
     //db.close();
 }
 export const insertFile = async (name: String) => {
-  const insertSql = `INSERT INTO File (name, fileCreated, createdAt) VALUES(?, ?)`;
+  const insertSql = `INSERT INTO File (name, fileCreated, createdAt) VALUES(?, ?, ?)`;
   try {
     await execute(db, insertSql, [name, 0, +new Date()]);
     const createdFile = await query('SELECT * FROM File ORDER BY id DESC LIMIT 1');
