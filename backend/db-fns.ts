@@ -3,7 +3,9 @@ const db = new sqlite3.Database('crs.sqlite3');
 
 export const createTables = () => {
     db.serialize(() => {
-        db.run("CREATE TABLE File (name TEXT, jobId INT, createdAt INT, updatedAt INT, id INTEGER PRIMARY KEY AUTOINCREMENT)");
+        // fileCreated = 0 : not created
+        // fileCreated = 1 : created
+        db.run("CREATE TABLE File (name TEXT, jobId INT, fileCreated INT, createdAt INT, updatedAt INT, id INTEGER PRIMARY KEY AUTOINCREMENT)");
         db.run("CREATE TABLE Jobs (status TEXT, createdAt INT, updatedAt INT, id INTEGER PRIMARY KEY AUTOINCREMENT)");
     });
     //db.close();
@@ -30,7 +32,7 @@ export const insertFile = async (name: String) => {
 }
 export const getFilesWithoutJobs = async () => {
     try {
-        const filesWithoutJobs = await query('SELECT * FROM File WHERE jobId IS NULL');
+        const filesWithoutJobs = await query('SELECT * FROM File WHERE jobId IS NULL AND fileCreated = 1');
         return filesWithoutJobs;
       } catch (err) {
         console.log(err);
@@ -47,9 +49,9 @@ export const getFilesWithoutJobs = async () => {
 }
 
 export const createJobSetFiles = async(files: Array<any>) => {
-    const insertSql = `INSERT INTO Jobs (status) VALUES(?)`;
+    const insertSql = `INSERT INTO Jobs (status, fileCreated) VALUES(?)`;
   try {
-    await execute(db, insertSql, ['created']);
+    await execute(db, insertSql, ['created', 0]);
     const JobsResponse = await query('SELECT * FROM Jobs ORDER BY id DESC LIMIT 1');
     const job = JobsResponse[0];
     //console.log(job)
@@ -106,6 +108,17 @@ export const updateJobStatus = async(jobId, status) => {
   }
 }
 
+export const updateFileStatus = async(fileId, status) => {
+  try {
+        const updateSql = `UPDATE File SET fileCreated = "${status}" WHERE id = ${fileId}`
+        await execute(db, updateSql);
+  } catch (err) {
+    console.log(err);
+  } finally {
+    //db.close();
+  }
+}
+
 export const getFirstPrintingJob = async () => {
     try {
         const firstPrintingJob = await query('SELECT * FROM Jobs WHERE status = "printing" ORDER BY id ASC');
@@ -121,6 +134,18 @@ export const getFirstUploadedJob = async () => {
     try {
         const firstPrintingJob = await query('SELECT * FROM Jobs WHERE status = "uploaded" ORDER BY id ASC');
         return firstPrintingJob[0];
+      } catch (err) {
+        console.log(err);
+      } finally {
+        //db.close();
+      }
+}
+
+export const getDBContent = async () => {
+    try {
+        const jobs = await query('SELECT * FROM Jobs ORDER BY id ASC');
+        const files = await query('SELECT * FROM File ORDER BY id ASC');
+        return {jobs, files};
       } catch (err) {
         console.log(err);
       } finally {
