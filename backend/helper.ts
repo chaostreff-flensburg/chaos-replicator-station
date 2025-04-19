@@ -1,6 +1,4 @@
 import { exec } from "child_process"; import { octoprintApi } from './octoprintApi'
-import { File, Job, PrismaClient } from './generated/prisma'
-const prisma = new PrismaClient()
 import fs from 'fs'
 
 export const uploadFileToOctoprint = async (filePath: string) => {
