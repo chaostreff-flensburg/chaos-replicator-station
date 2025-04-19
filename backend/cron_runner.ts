@@ -1,5 +1,3 @@
-import { File, Job, PrismaClient } from './generated/prisma'
-const prisma = new PrismaClient()
 import {appExecute, uploadFileToOctoprint, getPrinterStatus, selectAndPrintFile} from './helper'
 import { getFilesWithoutJobs, createJobSetFiles, updateJobStatus, getFirstPrintingJob, getFirstUploadedJob  } from './db-fns'
 
@@ -53,7 +51,7 @@ const main = async () => {
     }
 }
 
-const createJob = async (files: Array<File>) => {
+const createJob = async (files: Array<any>) => {
     try{
         console.log(`Creating new job from files`)
         // slice files to max first 6 element in array
