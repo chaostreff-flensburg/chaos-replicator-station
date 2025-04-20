@@ -67,7 +67,7 @@ const createJob = async (files: Array<any>) => {
         console.log(`Created job ${job.id} with ${slicedFiles.length} files`)
         const slicedFilesName: string = slicedFiles.map(file => `"./stls/${file.id}.stl"`).join(' ')
         console.log(slicedFilesName)
-        await appExecute(`cd ../../bottle-clip-name-tag && prusa-slicer --load="./PrusaSlicer_config_bundle.ini" -m -g ${slicedFilesName} -o="./gcodes/${job.id}.gcode"`);
+        await appExecute(`cd ../../bottle-clip-name-tag && prusa-slicer --bed-temperature 60 --first-layer-bed-temperature 60 --first-layer-temperature 215 --temperature 215 --load="./PrusaSlicer_config_bundle.ini" -m -g ${slicedFilesName} -o="./gcodes/${job.id}.gcode"`);
         // update job status to sliced
         await updateJobStatus(job.id, "sliced");
         console.log(`Updated job ${job.id} to sliced`)
