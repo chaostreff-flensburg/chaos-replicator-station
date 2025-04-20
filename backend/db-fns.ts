@@ -119,9 +119,12 @@ export const updateFileStatus = async(fileId, status) => {
   }
 }
 
-export const getFirstPrintingJob = async () => {
+export const getFirstPrintingJob = async (all = false) => {
     try {
         const firstPrintingJob = await query('SELECT * FROM Jobs WHERE status = "printing" ORDER BY id ASC');
+        if(all){
+            return firstPrintingJob;
+        }
         return firstPrintingJob[0];
       } catch (err) {
         console.log(err);

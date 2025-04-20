@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { appExecute } from './helper'
 import { getPrinterStatus } from './helper';
-import { insertFile, getDBContent, updateFileStatus } from './db-fns';
+import { insertFile, getDBContent, updateFileStatus , getFirstPrintingJob, updateJobStatus} from './db-fns';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -70,9 +70,35 @@ app.get('/job-file-status', async (req: Request, res: Response) => {
 app.get('/db-content', async (req: Request, res: Response) => {
   try {
     const dbContent = await getDBContent();
+    res.send(dbContent)
+  } catch (error) {
     res.send({
-      message: "created",
-      dbContent,
+      message: JSON.stringify(error),
+      status: 500
+    })
+  }
+})
+
+app.get('/printing-jobs', async (req: Request, res: Response) => {
+  try {
+    const dbContent = await getFirstPrintingJob(true)
+    console.log('dbContent', dbContent)
+    res.send(dbContent)
+  } catch (error) {
+    res.send({
+      message: JSON.stringify(error),
+      status: 500
+    })
+  }
+})
+
+app.post('/update-job', async (req: Request, res: Response) => {
+  try {
+    // req.params.jobId
+    // req.params.status
+    console.log('req.params', req.body)
+    await updateJobStatus(req.body.jobId, req.body.status)
+    res.send({
       status: 200
     })
   } catch (error) {
