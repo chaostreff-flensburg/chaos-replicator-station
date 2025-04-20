@@ -28,7 +28,7 @@
             <h3>Files</h3>
             <ul>
                 <li v-for="file in dbContent?.files" :key="file.id">
-                    {{ file.id }} - jobId: {{ file.jobId }}  {{ file.itemCreated }} - {{ file.createdAt }}
+                    {{ file.id }}; - jobId: {{ file.jobId }};  fileCreated: {{ file.fileCreated === 1 ? 'ja' : 'nein'  }}; {{ file.createdAt }}
                 </li>
             </ul>
         </div>
