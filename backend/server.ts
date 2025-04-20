@@ -39,11 +39,16 @@ app.post('/print-jobs', async (req: Request, res: Response) => {
 app.get('/printer-status', async (req: Request, res: Response) => {
   try {
     const printerStatus = await getPrinterStatus();
+    const firstPrintingJob = await getFirstPrintingJob()
+    const askUserIfBedIsClean = (!!firstPrintingJob && printerStatus?.isAvailableForPrinting)
     res.send({
       message: "created",
       printerStatus,
+      askUserIfBedIsClean,
+      firstPrintingJob,
       status: 200
     })
+
   } catch (error) {
     res.send({
       message: JSON.stringify(error),
@@ -95,9 +100,6 @@ app.get('/printing-jobs', async (req: Request, res: Response) => {
 
 app.post('/update-job', async (req: Request, res: Response) => {
   try {
-    // req.params.jobId
-    // req.params.status
-    console.log('req.params', req.body)
     await updateJobStatus(req.body.jobId, req.body.status)
     res.send({
       status: 200
