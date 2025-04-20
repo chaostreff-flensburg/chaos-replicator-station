@@ -10,7 +10,7 @@
       <div class="col-6">
         <h2>Info zum Druck</h2>
         <template v-if="printerStatus">
-          <BtnCleanPlate :jobId="printerStatus.firstPrintingJob.id"/>
+          <BtnCleanPlate :jobId="printerStatus?.firstPrintingJob?.id"/>
         </template>
         <pre>{{ printerStatus }}</pre>
       </div>
