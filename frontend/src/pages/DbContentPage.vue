@@ -21,13 +21,13 @@
             <h2>DB Inhalt</h2>
             <h3>Jobs</h3>
             <ul>
-                <li v-for="job in dbContent.jobs" :key="job.id">
+                <li v-for="job in dbContent?.jobs" :key="job.id">
                     {{ job.id }} - {{ job.status }} - {{ job.createdAt }}
                 </li>
             </ul>
             <h3>Files</h3>
             <ul>
-                <li v-for="file in dbContent.files" :key="file.id">
+                <li v-for="file in dbContent?.files" :key="file.id">
                     {{ file.id }} - jobId: {{ file.jobId }}  {{ file.itemCreated }} - {{ file.createdAt }}
                 </li>
             </ul>
