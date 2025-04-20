@@ -1,7 +1,7 @@
-import {appExecute, uploadFileToOctoprint, getPrinterStatus, selectAndPrintFile} from './helper'
-import { getFilesWithoutJobs, createJobSetFiles, updateJobStatus, getFirstPrintingJob, getFirstUploadedJob  } from './db-fns'
+import { appExecute, uploadFileToOctoprint, getPrinterStatus, selectAndPrintFile } from './helper'
+import { getFilesWithoutJobs, createJobSetFiles, updateJobStatus, getFirstPrintingJob, getFirstUploadedJob } from './db-fns'
 const flags = {
-  startPrint: process.env.START_PRINT || true,
+    startPrint: process.env.START_PRINT || true,
 }
 const main = async () => {
     while (true) {
@@ -14,33 +14,35 @@ const main = async () => {
             const files = await getFilesWithoutJobs();
             console.log(`Found ${files.length} files without a print job`)
             // if count of file sis larger or equal to 1
-            if(!files.length){
+            if (!files.length) {
             }
             else if (files.length >= 6) {
                 await createJob(files);
             }
             // if last element of file created_at to now() difference is bigger then 120 seconds, if shoud be true
-            else if(true || (+Date.now() - files.at(-1)?.created_at) >= 120*1000){
+            else if (true || (+Date.now() - files.at(-1)?.created_at) >= 120 * 1000) {
                 await createJob(files);
             }
 
             // Job gcode to printer (if printer is not busy)
 
-        // check printer status - and create new print status
-        const printerStatus = await getPrinterStatus();
-        const jobPrinting = await getFirstPrintingJob();
-        console.log('printerStatus', printerStatus, 'jobPrinting', jobPrinting)
-        if(printerStatus?.isAvailableForPrinting && !jobPrinting){
-            
-            //prisma get the job with the smallest id and the status "uploaded"
-            const jobToPrint = await getFirstUploadedJob()
-            console.log('jobToPrint', jobToPrint)
-            if(jobToPrint.id){
-                await selectAndPrintFile(`${jobToPrint.id}.gcode`);
-                await updateJobStatus(jobToPrint.id, "printing");
+            // check printer status - and create new print status
+            const printerStatus = await getPrinterStatus();
+            const jobPrinting = await getFirstPrintingJob();
+            console.log('printerStatus', printerStatus, 'jobPrinting', jobPrinting)
+            if (printerStatus?.isAvailableForPrinting && !jobPrinting) {
+
+                //prisma get the job with the smallest id and the status "uploaded"
+                const jobToPrint = await getFirstUploadedJob()
+                console.log('jobToPrint', jobToPrint)
+                if (jobToPrint.id) {
+                    if (flags.startPrint) {
+                        await selectAndPrintFile(`${jobToPrint.id}.gcode`);
+                        await updateJobStatus(jobToPrint.id, "printing");
+                    }
+                }
             }
-        }
-        // If printer is done with job, update job
+            // If printer is done with job, update job
         } catch (error) {
             console.error(error);
         }
@@ -55,13 +57,13 @@ const main = async () => {
 }
 
 const createJob = async (files: Array<any>) => {
-    try{
+    try {
         console.log(`Creating new job from files`)
         // slice files to max first 6 element in array
         const slicedFiles = files.slice(0, 6);
         // create new Print
         const job = await createJobSetFiles(files)
-        
+
         console.log(`Created job ${job.id} with ${slicedFiles.length} files`)
         const slicedFilesName: string = slicedFiles.map(file => `"./stls/${file.id}.stl"`).join(' ')
         console.log(slicedFilesName)
@@ -70,13 +72,13 @@ const createJob = async (files: Array<any>) => {
         await updateJobStatus(job.id, "sliced");
         console.log(`Updated job ${job.id} to sliced`)
         await uploadFileToOctoprint(`../../bottle-clip-name-tag/gcodes/${job.id}.gcode`);
-        if(flags.startPrint){
-            await updateJobStatus(job.id, "uploaded");
-        }else{
-            console.log(`Job ${job.id} is not started, because START_PRINT is set to false`)
-        }
+
+        await updateJobStatus(job.id, "uploaded");
+
+        console.log(`Job ${job.id} is not started, because START_PRINT is set to false`)
+
         console.log(`Updated job ${job.id} to uploaded`)
-    }catch(error){
+    } catch (error) {
         console.error(error);
     }
 }
