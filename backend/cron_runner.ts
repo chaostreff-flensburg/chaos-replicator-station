@@ -1,6 +1,8 @@
 import {appExecute, uploadFileToOctoprint, getPrinterStatus, selectAndPrintFile} from './helper'
 import { getFilesWithoutJobs, createJobSetFiles, updateJobStatus, getFirstPrintingJob, getFirstUploadedJob  } from './db-fns'
-
+const flags = {
+  startPrint: process.env.START_PRINT || true,
+}
 const main = async () => {
     while (true) {
         const loopStart: number = +Date.now();
@@ -68,7 +70,11 @@ const createJob = async (files: Array<any>) => {
         await updateJobStatus(job.id, "sliced");
         console.log(`Updated job ${job.id} to sliced`)
         await uploadFileToOctoprint(`../../bottle-clip-name-tag/gcodes/${job.id}.gcode`);
-        await updateJobStatus(job.id, "uploaded");
+        if(flags.startPrint){
+            await updateJobStatus(job.id, "uploaded");
+        }else{
+            console.log(`Job ${job.id} is not started, because START_PRINT is set to false`)
+        }
         console.log(`Updated job ${job.id} to uploaded`)
     }catch(error){
         console.error(error);
