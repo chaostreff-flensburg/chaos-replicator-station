@@ -39,7 +39,7 @@
                 <b>Konfiguration:</b>
                 <ul>
                     <li v-for="(value, key) in configurationForm" :key="key">
-                        {{product?.fields.find((field) => field.name === key)?.label || key}}: "{{ value }}"
+                        {{product?.fields.find((field) => field.name === key)?.label || key}}: "{{ value.toUpperCase() }}"
                     </li>
                 </ul>
                 <q-btn label="Jetzt Drucken" @click="submitPringJobRequest()" :loading="loading" />

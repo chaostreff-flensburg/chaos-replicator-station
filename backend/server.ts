@@ -19,7 +19,7 @@ app.post('/print-jobs', async (req: Request, res: Response) => {
   try {
     const name = req.body?.configuration?.name;
 
-    const file = await insertFile(name)
+    const file = await insertFile(name.toUpperCase())
     console.log(file);
     await appExecute(`cd ../../bottle-clip-name-tag && openscad -D name='"${name}"' examples.scad -o stls/${file?.id}.stl`);
     await updateFileStatus(file?.id, 1);
