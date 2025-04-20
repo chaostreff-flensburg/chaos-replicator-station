@@ -16,6 +16,7 @@
                 <li v-for="job in printingJobs" :key="job.id">
                     {{ job.id }} - {{ job.createdAt }} 
                     <q-btn @click="changeStatusPrintingJob(job.id, 'uploaded')" :loading="loadChangeStatus">Neuer Status: "uploaded"</q-btn>
+                    <q-btn @click="changeStatusPrintingJob(job.id, 'aborted')" :loading="loadChangeStatus">Neuer Status: "abgebrochen"</q-btn>
                 </li>
             </ol>
             <h2>DB Inhalt</h2>
