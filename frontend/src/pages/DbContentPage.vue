@@ -7,7 +7,7 @@
                 </router-link>
             </div>
             <div class="col-10">
-                <h1>Übersicht Druckaufträge</h1>
+                <h1>DB Übersicht</h1>
             </div>
         </div>
         <div>
@@ -15,8 +15,9 @@
             <ol>
                 <li v-for="job in printingJobs" :key="job.id">
                     {{ job.id }} - {{ job.createdAt }} 
-                    <q-btn @click="changeStatusPrintingJob(job.id, 'uploaded')" :loading="loadChangeStatus">Neuer Status: "uploaded"</q-btn>
-                    <q-btn @click="changeStatusPrintingJob(job.id, 'aborted')" :loading="loadChangeStatus">Neuer Status: "abgebrochen"</q-btn>
+                    <q-btn @click="changeStatusPrintingJob(job.id, 'uploaded')" :loading="loadChangeStatus" color="orange">Neuer Status: "uploaded"</q-btn>
+                    <q-btn @click="changeStatusPrintingJob(job.id, 'aborted')" :loading="loadChangeStatus" color="red">Neuer Status: "abgebrochen"</q-btn>
+                    <q-btn @click="changeStatusPrintingJob(job.id, 'completed')" :loading="loadChangeStatus" color="primary">Neuer Status: "abgeschlossen"</q-btn>
                 </li>
             </ol>
             <h2>DB Inhalt</h2>
