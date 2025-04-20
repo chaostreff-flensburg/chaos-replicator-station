@@ -23,7 +23,7 @@ const confirm =  () => {
         message: 'Ist die Platte wirklich frei? Befinden sich keine Objekte oder weiße Reste auf der Platte vom oberen Drucker?',
         cancel: true,
         persistent: true
-      }).onOk(() => {
+      }).onOk(async() => {
         await changeStatusPrintingJob(props.jobId, 'completed')
       }).onOk(() => {
         // console.log('>>>> second OK catcher')
