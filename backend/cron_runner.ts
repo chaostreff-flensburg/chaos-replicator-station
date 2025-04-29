@@ -1,5 +1,6 @@
 import { appExecute, uploadFileToOctoprint, getPrinterStatus, selectAndPrintFile } from './helper'
 import { getFilesWithoutJobs, createJobSetFiles, updateJobStatus, getFirstPrintingJob, getFirstUploadedJob } from './db-fns'
+import { File } from './db-fns'
 const flags = {
     startPrint: process.env.START_PRINT || true,
 }
@@ -11,17 +12,24 @@ const main = async () => {
         try {
 
             // Start: Sliced files to Job gcode
-            const files = await getFilesWithoutJobs();
-            console.log(`Found ${files.length} files without a print job`)
-            // if count of file sis larger or equal to 1
-            if (!files.length) {
-            }
-            else if (files.length >= 6) {
-                await createJob(files);
-            }
-            // if last element of file created_at to now() difference is bigger then 120 seconds, if shoud be true
-            else if (true || (+Date.now() - files.at(-1)?.created_at) >= 120 * 1000) {
-                await createJob(files);
+            try {
+                const files = (await getFilesWithoutJobs()) as File[] | undefined;
+                const fileArray = files || [];
+                if (!fileArray.length) {
+                    console.log('No files returned from getFilesWithoutJobs');
+                    return;
+                }
+                console.log(`Found ${fileArray.length} files without a print job`)
+                // if count of file sis larger or equal to 1
+                if (fileArray.length >= 6) {
+                    await createJob(fileArray);
+                }
+                // if last element of file created_at to now() difference is bigger then 120 seconds, if shoud be true
+                else if (true || (+Date.now() - (fileArray.at(-1)?.createdAt || 0)) >= 120 * 1000) {
+                    await createJob(fileArray);
+                }
+            } catch (error) {
+                console.error('Error while getting files without jobs:', error);
             }
 
             // Job gcode to printer (if printer is not busy)
@@ -35,7 +43,7 @@ const main = async () => {
                 //prisma get the job with the smallest id and the status "uploaded"
                 const jobToPrint = await getFirstUploadedJob()
                 console.log('jobToPrint', jobToPrint)
-                if (jobToPrint.id) {
+                if (jobToPrint && jobToPrint.id) {
                     if (flags.startPrint) {
                         await selectAndPrintFile(`${jobToPrint.id}.gcode`);
                         await updateJobStatus(jobToPrint.id, "printing");
@@ -56,13 +64,16 @@ const main = async () => {
     }
 }
 
-const createJob = async (files: Array<any>) => {
+const createJob = async (files: Array<File>) => {
     try {
         console.log(`Creating new job from files`)
         // slice files to max first 6 element in array
         const slicedFiles = files.slice(0, 6);
         // create new Print
         const job = await createJobSetFiles(files)
+        if (!job) {
+            throw new Error('Failed to create job');
+        }
 
         console.log(`Created job ${job.id} with ${slicedFiles.length} files`)
         const slicedFilesName: string = slicedFiles.map(file => `"./stls/${file.id}.stl"`).join(' ')

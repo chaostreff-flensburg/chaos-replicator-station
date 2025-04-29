@@ -1,9 +1,41 @@
-import { exec } from "child_process"; import { octoprintApi } from './octoprintApi'
+import { exec } from "child_process";
+import { octoprintApi } from './octoprintApi'
 import fs from 'fs'
+import type { AxiosResponse } from 'axios'
 
-export const uploadFileToOctoprint = async (filePath: string) => {
+interface OctoPrintResponse {
+  status: string;
+}
+
+interface PrinterState {
+  text: string;
+  flags: {
+    operational: boolean;
+  };
+}
+
+interface PrinterResponse {
+  state: PrinterState;
+  isAvailableForPrinting?: boolean;
+}
+
+interface FileResponse {
+  files: {
+    name: string;
+    path: string;
+  };
+}
+
+interface SelectAndPrintResponse {
+  files: {
+    name: string;
+    path: string;
+  };
+}
+
+export const uploadFileToOctoprint = async (filePath: string): Promise<OctoPrintResponse | null> => {
   try {
-    const response = await octoprintApi.post('/files/local', {
+    const response: AxiosResponse<OctoPrintResponse> = await octoprintApi.post('/files/local', {
       file: fs.createReadStream(filePath)
     },
       {
@@ -12,17 +44,18 @@ export const uploadFileToOctoprint = async (filePath: string) => {
         }
       })
     if (response.status === 201) {
-      return true
-      console.log(response.data)
+      return response.data
     }
+    return null
   } catch (error) {
     console.error(error);
+    return null
   }
 }
 
-export const getPrinterStatus = async () => {
+export const getPrinterStatus = async (): Promise<PrinterResponse | null> => {
   try {
-    const response = await octoprintApi.get('/printer')
+    const response: AxiosResponse<PrinterResponse> = await octoprintApi.get('/printer')
     console.log(response.data.state)
     if (!response.data.state) return null
     return {
@@ -35,22 +68,23 @@ export const getPrinterStatus = async () => {
   }
 }
 
-export const selectAndPrintFile = async (fileName: string) => {
+export const selectAndPrintFile = async (fileName: string): Promise<SelectAndPrintResponse | null> => {
   try {
-    const response = await octoprintApi.post(`/files/local/${fileName}`, {
+    const response: AxiosResponse<SelectAndPrintResponse> = await octoprintApi.post(`/files/local/${fileName}`, {
       command: "select",
       print: true
     })
     if (response.status === 204) {
       return response.data
     }
+    return null
   } catch (error) {
     console.error(error);
     return null
   }
 }
 
-export const appExecute = async (command: string): Promise<any> => {
+export const appExecute = async (command: string): Promise<string | null> => {
   return new Promise((resolve, reject) => {
     exec(command, (error, stdout, stderr) => {
       if (!!stdout) {

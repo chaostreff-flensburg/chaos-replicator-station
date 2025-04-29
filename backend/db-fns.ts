@@ -1,5 +1,22 @@
-const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database('crs.sqlite3');
+import sqlite3 from 'sqlite3';
+import { Database } from 'sqlite3';
+const db: Database = new sqlite3.Database('crs.sqlite3');
+
+export interface Job {
+    id: number;
+    status: string;
+    createdAt?: number;
+    updatedAt?: number;
+}
+
+export interface File {
+    id: number;
+    name: string;
+    jobId: number | null;
+    fileCreated: number;
+    createdAt?: number;
+    updatedAt?: number;
+}
 
 export const createTables = () => {
     db.serialize(() => {
@@ -14,9 +31,9 @@ export const insertFile = async (name: String) => {
   const insertSql = `INSERT INTO File (name, fileCreated, createdAt) VALUES(?, ?, ?)`;
   try {
     await execute(db, insertSql, [name, 0, +new Date()]);
-    const createdFile = await query('SELECT * FROM File ORDER BY id DESC LIMIT 1');
-    console.log(createdFile[0])
-    return createdFile[0];
+    const createdFile = await query<File>('SELECT * FROM File ORDER BY id DESC LIMIT 1', 'get');
+    console.log(createdFile)
+    return createdFile;
   } catch (err) {
     console.log(err);
   } finally {
@@ -32,7 +49,7 @@ export const insertFile = async (name: String) => {
 }
 export const getFilesWithoutJobs = async () => {
     try {
-        const filesWithoutJobs = await query('SELECT * FROM File WHERE jobId IS NULL AND fileCreated = 1');
+        const filesWithoutJobs = await query<File>('SELECT * FROM File WHERE jobId IS NULL AND fileCreated = 1', 'all');
         return filesWithoutJobs;
       } catch (err) {
         console.log(err);
@@ -48,12 +65,12 @@ export const getFilesWithoutJobs = async () => {
             */
 }
 
-export const createJobSetFiles = async(files: Array<any>) => {
+export const createJobSetFiles = async(files: Array<File>) => {
     const insertSql = `INSERT INTO Jobs (status) VALUES(?)`;
   try {
     await execute(db, insertSql, ['created']);
-    const JobsResponse = await query('SELECT * FROM Jobs ORDER BY id DESC LIMIT 1');
-    const job = JobsResponse[0];
+    const JobsResponse = await query<Job>('SELECT * FROM Jobs ORDER BY id DESC LIMIT 1', 'get');
+    const job = JobsResponse as Job;
     //console.log(job)
     //console.log('files', files)
     for (const file of files){
@@ -87,7 +104,7 @@ export const createJobSetFiles = async(files: Array<any>) => {
   }
 }
 
-export const updateJobStatus = async(jobId, status) => {
+export const updateJobStatus = async(jobId: number, status: string) => {
   try {
         const updateSql = `UPDATE Jobs SET status = "${status}" WHERE id = ${jobId}`
         await execute(db, updateSql);
@@ -108,7 +125,7 @@ export const updateJobStatus = async(jobId, status) => {
   }
 }
 
-export const updateFileStatus = async(fileId, status) => {
+export const updateFileStatus = async(fileId: number, status: number) => {
   try {
         const updateSql = `UPDATE File SET fileCreated = "${status}" WHERE id = ${fileId}`
         await execute(db, updateSql);
@@ -121,11 +138,11 @@ export const updateFileStatus = async(fileId, status) => {
 
 export const getFirstPrintingJob = async (all = false) => {
     try {
-        const firstPrintingJob = await query('SELECT * FROM Jobs WHERE status = "printing" ORDER BY id ASC');
+        const firstPrintingJob = await query<Job>('SELECT * FROM Jobs WHERE status = "printing" ORDER BY id ASC', all ? 'all' : 'get');
         if(all){
             return firstPrintingJob;
         }
-        return firstPrintingJob[0];
+        return firstPrintingJob;
       } catch (err) {
         console.log(err);
       } finally {
@@ -135,8 +152,8 @@ export const getFirstPrintingJob = async (all = false) => {
 
 export const getFirstUploadedJob = async () => {
     try {
-        const firstPrintingJob = await query('SELECT * FROM Jobs WHERE status = "uploaded" ORDER BY id ASC');
-        return firstPrintingJob[0];
+        const firstPrintingJob = await query<Job>('SELECT * FROM Jobs WHERE status = "uploaded" ORDER BY id ASC', 'get');
+        return firstPrintingJob;
       } catch (err) {
         console.log(err);
       } finally {
@@ -146,8 +163,8 @@ export const getFirstUploadedJob = async () => {
 
 export const getDBContent = async () => {
     try {
-        const jobs = await query('SELECT * FROM Jobs ORDER BY id ASC');
-        const files = await query('SELECT * FROM File ORDER BY id ASC');
+        const jobs = await query<Job>('SELECT * FROM Jobs ORDER BY id ASC', 'all');
+        const files = await query<File>('SELECT * FROM File ORDER BY id ASC', 'all');
         return {jobs, files};
       } catch (err) {
         console.log(err);
@@ -157,28 +174,46 @@ export const getDBContent = async () => {
 }
 
 // --- helper
-const query = (command, method = 'all') => {
-    return new Promise((resolve, reject) => {
-      db[method](command, (error, result) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(result);
-        }
-      });
+const query = <T>(command: string, method: 'all' | 'get' | 'run' = 'all') => {
+    return new Promise<T>((resolve, reject) => {
+      if (method === 'all') {
+        db.all(command, (error: Error | null, result: any) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        });
+      } else if (method === 'get') {
+        db.get(command, (error: Error | null, result: any) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        });
+      } else {
+        db.run(command, (error: Error | null, result: any) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        });
+      }
     });
   };
 
-const execute = async (db, sql, params = []) => {
+const execute = async (db: Database, sql: string, params: any[] = []): Promise<void> => {
     if (params && params.length > 0) {
-      return new Promise((resolve, reject) => {
+      return new Promise<void>((resolve, reject) => {
         db.run(sql, params, (err) => {
           if (err) reject(err);
           resolve();
         });
       });
     }
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       db.run(sql, (err) => {
         if (err) reject(err);
         resolve();
